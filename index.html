@@ -16,12 +16,6 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
-            transform: translateY(0);
-        }
-        
-        .panel-hidden {
-            transform: translateY(calc(100% - 44px));
         }
 
         /* 优雅的内部滚动条 */
@@ -65,16 +59,28 @@
     <!-- 主渲染画布 -->
     <canvas id="artCanvas"></canvas>
 
-    <!-- UI 控制面板 -->
-    <div id="uiPanel" class="glass-panel fixed bottom-6 right-6 w-80 rounded-2xl flex flex-col overflow-hidden z-50">
-        <!-- 顶部收缩拉手 -->
-        <div id="toggleBtn" class="w-full h-11 shrink-0 flex items-center justify-center cursor-pointer hover:bg-black/5 transition-colors group">
-            <div class="w-12 h-1.5 bg-gray-300 rounded-full group-hover:bg-gray-400 transition-colors"></div>
+    <!-- 极简圆形汉堡菜单图标 (收起状态) -->
+    <div id="hamburgerBtn" class="glass-panel fixed top-6 right-6 w-11 h-11 rounded-full flex flex-col justify-center items-center gap-[3px] cursor-pointer z-[60] hover:bg-white/90 transition-all duration-300">
+        <div class="w-4 h-[2px] bg-gray-700 rounded-full"></div>
+        <div class="w-4 h-[2px] bg-gray-700 rounded-full"></div>
+        <div class="w-4 h-[2px] bg-gray-700 rounded-full"></div>
+    </div>
+
+    <!-- UI 控制面板 (展开状态) -->
+    <div id="uiPanel" class="glass-panel fixed top-6 right-6 w-80 rounded-2xl flex flex-col overflow-hidden z-50 origin-top-right transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] opacity-0 scale-95 pointer-events-none translate-x-4 invisible">
+        
+        <!-- 顶部标题与关闭按钮 -->
+        <div class="w-full flex items-center justify-between px-6 pt-5 pb-3">
+            <h2 class="text-sm font-bold text-gray-800 tracking-widest uppercase">Settings</h2>
+            <div id="closeBtn" class="w-8 h-8 -mr-2 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer transition-colors group">
+                <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-800 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
         </div>
         
         <!-- 面板内容区 (支持滚动以适应屏幕) -->
-        <div class="px-6 pb-6 pt-2 space-y-4 overflow-y-auto custom-scrollbar max-h-[70vh]">
-            <h2 class="text-sm font-bold text-gray-800 tracking-widest uppercase">Canvas Settings</h2>
+        <div class="px-6 pb-6 space-y-4 overflow-y-auto custom-scrollbar max-h-[75vh]">
             
             <!-- 滑块：洞穴数量 -->
             <div class="space-y-1.5">
@@ -223,16 +229,16 @@
 
         let dogBaseRenderSize = 80; 
 
-        // 全局配置对象（新增 holeScale, dogScale, popDistance）
+        // 全局配置对象
         let holes = [];
         let mouseX = -1000;
         let mouseY = -1000;
         let config = {
             count: 12,
             spread: 0.6,
-            holeScale: 1.0,   // 洞洞大小倍率 (0.5 - 1.8)
-            dogScale: 1.0,    // 狗狗大小倍率 (0.5 - 1.8)
-            popDistance: 1.0  // 探出距离倍率 (0.5 - 2.0)
+            holeScale: 1.0,   
+            dogScale: 1.0,    
+            popDistance: 1.0  
         };
 
         // --- 核心类：有机异形洞穴 ---
@@ -260,7 +266,6 @@
                 }
             }
 
-            // 动态计算响应 UI 参数后的基准半径
             get baseRadius() {
                 return this.rawRadius * config.holeScale;
             }
@@ -297,21 +302,18 @@
                 ctx.fill();
                 ctx.restore();
 
-                // 2. 绘制小狗 (受 dogScale 与 popDistance 联动控制)
+                // 2. 绘制小狗
                 if (this.popProgress > 0.01 && this.currentDogImg.complete && this.currentDogImg.naturalWidth > 0) {
                     ctx.save();
                     ctx.beginPath();
-                    // 根据当前洞穴尺寸与探出高度动态裁切出地面下的暗区
                     ctx.rect(this.x - currentBaseRadius * 3, 0, currentBaseRadius * 6, this.y + currentBaseRadius * 0.15);
                     ctx.clip();
 
-                    // 计算探出位移 (根据 popDistance 参数调整最大纵向弹跃距离)
                     let maxPopOffset = currentBaseRadius * 1.5 * config.popDistance;
                     let dogYOffset = (1 - this.popProgress) * maxPopOffset;
                     let peekHeight = currentBaseRadius * 0.3 * config.popDistance;
                     let yPos = this.y - peekHeight + dogYOffset;
                     
-                    // 计算狗狗动态缩放 (受 dogScale 控制)
                     let effectiveDogSize = dogBaseRenderSize * config.dogScale;
                     let scale = (effectiveDogSize / this.currentDogImg.width) * (0.8 + this.popProgress * 0.2);
 
@@ -441,7 +443,6 @@
                 let dy = mouseY - hole.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 
-                // 碰撞检测：根据实际动态缩放后的洞穴尺寸判定
                 let currentlyHovered = dist < hole.baseRadius * 1.5;
                 
                 if (currentlyHovered && !hole.isHovered) {
@@ -463,7 +464,7 @@
             requestAnimationFrame(animate);
         }
 
-        // --- 交互事件与 UI 面板逻辑 ---
+        // --- 交互事件绑定 ---
         window.addEventListener('resize', resize);
         
         canvas.addEventListener('mousemove', (e) => {
@@ -486,58 +487,71 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }, { once: true });
 
-        const uiPanel = document.getElementById('uiPanel');
-        const toggleBtn = document.getElementById('toggleBtn');
-        const countSlider = document.getElementById('countSlider');
-        const spreadSlider = document.getElementById('spreadSlider');
-        const holeSizeSlider = document.getElementById('holeSizeSlider');
-        const dogSizeSlider = document.getElementById('dogSizeSlider');
-        const popDistSlider = document.getElementById('popDistSlider');
 
-        let isPanelOpen = true;
-        toggleBtn.addEventListener('click', () => {
-            isPanelOpen = !isPanelOpen;
+        // --- 全新面板 UI 收缩/展开逻辑 ---
+        const uiPanel = document.getElementById('uiPanel');
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        
+        let isPanelOpen = false; // 默认沉浸式关闭状态
+
+        function updatePanelState() {
             if(isPanelOpen) {
-                uiPanel.classList.remove('panel-hidden');
+                // 面板展开，隐藏汉堡按钮
+                uiPanel.classList.remove('opacity-0', 'scale-95', 'pointer-events-none', 'translate-x-4', 'invisible');
+                hamburgerBtn.classList.add('opacity-0', 'scale-50', 'pointer-events-none', 'invisible');
             } else {
-                uiPanel.classList.add('panel-hidden');
+                // 面板收缩，显示汉堡按钮
+                uiPanel.classList.add('opacity-0', 'scale-95', 'pointer-events-none', 'translate-x-4', 'invisible');
+                hamburgerBtn.classList.remove('opacity-0', 'scale-50', 'pointer-events-none', 'invisible');
             }
+        }
+
+        hamburgerBtn.addEventListener('click', () => {
+            isPanelOpen = true;
+            updatePanelState();
         });
 
-        countSlider.addEventListener('input', (e) => {
+        closeBtn.addEventListener('click', () => {
+            isPanelOpen = false;
+            updatePanelState();
+        });
+        
+        // 初始化状态
+        updatePanelState();
+
+        // 滑块绑定
+        document.getElementById('countSlider').addEventListener('input', (e) => {
             document.getElementById('countVal').innerText = e.target.value;
             config.count = parseInt(e.target.value);
             generateHoles(); 
         });
 
-        spreadSlider.addEventListener('input', (e) => {
+        document.getElementById('spreadSlider').addEventListener('input', (e) => {
             document.getElementById('spreadVal').innerText = e.target.value + '%';
             config.spread = parseInt(e.target.value) / 100;
             generateHoles();
         });
 
-        // 洞洞大小绑定
-        holeSizeSlider.addEventListener('input', (e) => {
+        document.getElementById('holeSizeSlider').addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
             document.getElementById('holeSizeVal').innerText = val + '%';
             config.holeScale = val / 100;
         });
 
-        // 狗狗大小绑定
-        dogSizeSlider.addEventListener('input', (e) => {
+        document.getElementById('dogSizeSlider').addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
             document.getElementById('dogSizeVal').innerText = val + '%';
             config.dogScale = val / 100;
         });
 
-        // 探出距离绑定
-        popDistSlider.addEventListener('input', (e) => {
+        document.getElementById('popDistSlider').addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
             document.getElementById('popDistVal').innerText = val + '%';
             config.popDistance = val / 100;
         });
 
-        // 图像上传绑定
+        // 图像与音频上传绑定
         function setupImageUpload(inputId, imgElementId, arrayIndex) {
             const input = document.getElementById(inputId);
             const preview = document.getElementById(imgElementId);
@@ -562,7 +576,6 @@
         setupImageUpload('upload2', 'preview2', 1);
         setupImageUpload('upload3', 'preview3', 2);
 
-        // 音频上传绑定
         function setupAudioUpload(inputId, arrayIndex) {
             const input = document.getElementById(inputId);
             const container = input.parentElement;
@@ -582,7 +595,6 @@
                 }
             });
         }
-        
         for (let i = 1; i <= 6; i++) {
             setupAudioUpload(`audioUpload${i}`, i - 1);
         }
